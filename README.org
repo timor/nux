@@ -14,7 +14,7 @@ moment.  This has the following consequences:
 - =nix-env -u= will not upgrade packages installed with =nux=
 
 * Installation
-  There are 3 ways to install nux:
+  There are 2 ways to install nux:
 
   1. Globally in nixos with =environment.systemPackage=
   2. Locally per user with =nix-shell -p nux --run 'nux install nixpkgs.nux'=
