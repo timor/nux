@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -e
+statefile=~/.config/nixpkgs/nux.state
+envExpr=~/.config/nixpkgs/nux-env.nix
+
+action="$1"
+package="$2"
+
+mkdir -p $(dirname "$statefile")
+touch "$statefile"
+
+function toplevelLetForms {
+    IFS=":" read -ra entries <<< "$NIX_PATH"
+    local a=$(printf '%s\n' "${entries[@]}" | sed '/=/!d;/nixos-config/d')
+    local entry
+    local ch
+    local path
+    for entry in $a ; do
+        IFS="=" read ch path <<< "$entry"
+        echo "let $ch = import <$ch> { }; in"
+    done
+}
+
+function checkUpdate {
+    nix-build --dry-run "$envExpr"
+}
+
+function update {
+  truncate -s 0 "$envExpr"
+  # for ch in $(ls /nix/var/nix/profiles/per-user/root/channels | grep -v -e manifest -e binary-caches) ; do
+  cat >> "$envExpr" <<EOF
+$(toplevelLetForms)
+let _pkgs = import <nixpkgs> { }; in
+rec { _paths = [
+$(cat $statefile | sort -u)
+             ];
+      env = _pkgs.buildEnv {
+      name = ''nux-environment'';
+      paths = _paths;
+}; }
+EOF
+  \nix-env -if "$envExpr" -A env && echo "# Updated successfully!" >> "$envExpr"
+}
+
+case "$action" in
+install|add)
+    [ -n "$package" ] || { echo "usage: $(basename "$0") install <pkgs>.<attribute>"; exit 1; }
+    if (grep -Eq "^$package #" "$statefile"); then
+        echo "already installed, updating"
+    else
+        echo "scheduled install'n'update"
+        pname=$(nix eval "($(toplevelLetForms) $package.name)")
+        echo "$package # $pname" >> "$statefile"
+    fi
+    # TODO: trap
+    update && echo Success || sed -i "/^$package #/d" $statefile
+;;
+uninstall|remove|delete)
+    if (grep -Eq "^$package #" "$statefile"); then
+        sed -i "/^$package #/d" $statefile
+        update && echo "Success"
+    else
+        echo Not installed
+    fi
+;;
+list)
+    cat "$statefile"
+;;
+update)
+    if update; then
+        echo "Success"
+    else
+        echo "Failed"
+    fi
+;;
+dry-update)
+    echo Running dry-build
+    checkUpdate
+;;
+*)
+    echo Command not specified. Try $(basename "$0") install nixpkgs.htop
+    echo Command list: install, uninstall, list, update, dry-update
+;;
+esac

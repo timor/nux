@@ -1,0 +1,52 @@
+* Description
+DISCLAIMER:  This is a very early version.
+The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177cf7dd478
+
+=nux= is a "more declarative" light-weight alternative/companion to =nix-env=.
+The main difference is that packages are identified by their attribute names
+instead of the derivation names. This makes package update semantics identical
+to =nixos-rebuild=.
+
+Note that the installed package collection is handled by =nix-env= at the
+moment.  This has the following consequences:
+
+- Calling =nux= creates a new generation of =~/.nix-profile=
+- =nix-env -u= will not upgrade packages installed with =nux=
+
+* Installation
+  There are 3 ways to install nux:
+
+  1. Globally in nixos with =environment.systemPackage=
+  2. Locally per user with =nix-shell -p nux --run 'nux install nixpkgs.nux'=
+
+  Note that the second method ensures that nux itself is not prone to the
+  problems of =nix-env=.  If =NIX_PATH= does not contain an entry =nixpkgs=, the
+  command must be adjusted accordingly.
+
+* Usage
+
+** Installing packages
+   =nux install <pkg>=
+
+   Note that =<pkgs>= takes the same form as the results returned by =nix search=
+
+** Other commands
+   The other commands are rather self-explanatory.
+
+   #+begin_src sh
+     $ nux
+
+     Command not specified. Try nux install nixpkgs.htop
+     Command list: install, uninstall, list, update, dry-update
+   #+end_src
+
+* Unaddressed Issues
+  - Attributes becoming unavailable in pkgs collection.  Does fail loudly though.
+  - Renamed/missing paths in =NIX_PATH=
+  - Duplicate detection, as two attributes from different pkgs collections count
+    as different packages.  If they differ, they will collide, which is
+    expected, and if they have the same hash, they will only be installed once.
+    But if one of them is removed, the package will still not be uninstalled,
+    since the other attribute remains in the list.
+  - =-i= flag
+  - passing unknown flags to nix-env/nix-build
