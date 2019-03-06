@@ -50,3 +50,5 @@ moment.  This has the following consequences:
     since the other attribute remains in the list.
   - =-i= flag
   - passing unknown flags to nix-env/nix-build
+  - building the environment before installing it with nix-environment
+  - supporting more than one argument name for install/uninstall operations
