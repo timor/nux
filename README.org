@@ -41,6 +41,9 @@ to keep user-wide installed packages up-to-date.
   problems of =nix-env=.  If =NIX_PATH= does not contain an entry =nixpkgs=, the
   command must be adjusted accordingly.
 
+  You can also just simply download the =nux= script here, make it executable
+  and run it.
+
 * Usage
 
 ** Installing packages
