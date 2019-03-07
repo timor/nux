@@ -16,12 +16,18 @@ moment.  This has the following consequences:
   but not from the list of packages handled by =nux=.
 - Packages that are installed with =nix-env -i= and =nux= can collide.
 
+=nux= builds and keeps track of packages in it's own profile, which resides in
+=$NIX_USER_PROFILE_DIR/nux=.  All =nux= commands use the package list of the
+most recent version of this profile as a basis.  This profile can of course be rolled back
+with =nix-env -p --rollback...=, which effectively resets the base list for the next =nux=
+command to that of the rolled-back-to generation.
+
 The packages are always taken from the current channel generations.  This has the
 following consequences:
 
 - =nux install= always includes a =nux update=
 
-This results in Semantics that lie somewhere between
+This results in semantics that lie somewhere between
 =environment.systemPackages= and =nix-env=.  The intention is to make it easier
 to keep user-wide installed packages up-to-date.
 
@@ -54,7 +60,7 @@ to keep user-wide installed packages up-to-date.
 
 * Unaddressed Issues
   - Attributes becoming unavailable in pkgs collection.  Does fail loudly though.
-  - Renamed/missing paths in =NIX_PATH=
+  - Renamed/missing paths in =NIX_PATH=, same as above
   - Duplicate detection, as two attributes from different pkgs collections count
     as different packages.  If they differ, they will collide, which is
     expected, and if they have the same hash, they will only be installed once.
@@ -62,5 +68,4 @@ to keep user-wide installed packages up-to-date.
     since the other attribute remains in the list.
   - =-i= flag
   - passing extra flags to nix-env/nix-build
-  - building the environment before installing it with nix-environment
   - supporting more than one argument name for install/uninstall operations

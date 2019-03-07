@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 set -e
-statefile=~/.config/nixpkgs/nux.state
+statefile=~/.config/nixpkgs/nux-package-list
 envExpr=~/.config/nixpkgs/nux-env.nix
+[ -z "$NIX_USER_PROFILE_DIR" ] && { echo "NIX_USER_PROFILE_DIR not set, don't know where to store nux profile"; exit 1; }
+profilePath="$NIX_USER_PROFILE_DIR/nux"
+currentPackageList="$profilePath/nux-package-list"
+
 
 action="$1"
 package="$2"
 
-mkdir -p $(dirname "$statefile")
-touch "$statefile"
+# Ensure that we always work from the last working profile, if there is one
+if [ -r "$currentPackageList" ]; then
+    cp --no-preserve=mode "$profilePath/nux-package-list" "$statefile"
+else
+    mkdir -p $(dirname "$statefile")
+    touch "$statefile"
+fi
 
 function toplevelLetForms {
     IFS=":" read -ra entries <<< "$NIX_PATH"
@@ -26,34 +35,41 @@ function checkUpdate {
 }
 
 function update {
+  local packList="$(cat $statefile |sort -u)"
   truncate -s 0 "$envExpr"
   # for ch in $(ls /nix/var/nix/profiles/per-user/root/channels | grep -v -e manifest -e binary-caches) ; do
   cat >> "$envExpr" <<EOF
 $(toplevelLetForms)
-let _pkgs = import <nixpkgs> { }; in
-rec { _paths = [
-$(cat $statefile | sort -u)
-             ];
+let
+  _pkgs = import <nixpkgs> { };
+  packageListFile = _pkgs.writeText "nux-package-list" ''
+$packList
+  ''; in
+      rec { _paths = [
+$packList
+        ];
       env = _pkgs.buildEnv {
       name = ''nux-environment'';
       paths = _paths;
+      postBuild = "cp \${packageListFile} \$out/nux-package-list";
 }; }
 EOF
-  \nix-env -if "$envExpr" -A env && echo "# Updated successfully!" >> "$envExpr"
+  echo "Building new nux profile generation"
+  \nix-env -p "$profilePath" -if "$envExpr" -A env && \
+      echo "Installing into user profile" && \
+      \nix-env -i --from-profile "$profilePath" nux-environment && \
+      echo "# Updated successfully!" >> "$envExpr"
 }
 
 case "$action" in
 install|add)
     [ -n "$package" ] || { echo "usage: $(basename "$0") install <pkgs>.<attribute>"; exit 1; }
-    if (grep -Eq "^$package #" "$statefile"); then
-        echo "already installed, updating"
-    else
-        echo "scheduled install'n'update"
-        pname=$(nix eval "($(toplevelLetForms) $package.name)")
-        echo "$package # $pname" >> "$statefile"
-    fi
+    echo "scheduled install'n'update"
+    pname=$(nix eval "($(toplevelLetForms) $package.name)")
+    echo "$package # $pname" >> "$statefile"
     # TODO: trap
-    update && echo Success || sed -i "/^$package #/d" $statefile
+    update && \
+        echo Success
 ;;
 uninstall|remove|delete)
     if (grep -Eq "^$package #" "$statefile"); then
