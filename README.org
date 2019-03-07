@@ -1,8 +1,8 @@
 * Description
 DISCLAIMER:  This is a very early version.
 The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177cf7dd478
+You might want to keep a copy of your favorite list of packages somewhere...
 
-=nux= is a "more declarative" light-weight alternative/companion to =nix-env=.
 The main difference is that packages are identified by their attribute names
 instead of their derivation names. This makes package update semantics identical
 to =nixos-rebuild=.
@@ -12,8 +12,8 @@ moment.  This has the following consequences:
 
 - Calling =nux= creates a new generation of =~/.nix-profile=.
 - =nix-env -u= will not upgrade packages installed with =nux=.
-- =nix-env --rollback= removes installed packages from the current user profile,
-  but not from the list of packages handled by =nux=.
+- =nix-env --rollback= removes the packages installed by =nux= from the current
+  user environment, but not from the list of packages handled by =nux=.
 - Packages that are installed with =nix-env -i= and =nux= can collide.
 
 =nux= builds and keeps track of packages in it's own profile, which resides in
@@ -34,7 +34,7 @@ to keep user-wide installed packages up-to-date.
 * Installation
   There are 2 ways to install nux:
 
-  1. Globally in nixos with =environment.systemPackage=
+  1. Globally in NixOS with =environment.systemPackage=
   2. Locally per user with =nix-shell -p nux --run 'nux install nixpkgs.nux'=
 
   Note that the second method ensures that nux itself is not prone to the
@@ -57,7 +57,8 @@ to keep user-wide installed packages up-to-date.
    This replaces the installed packages with the ones from
    =<package-list-file>=, which is expected to be in the same format as the
    output of =nux list=.  Useful for manually rolling back or initializing a
-   package set from scratch.
+   package set from scratch (and for recovering from issues while hacking
+   =nux=...)
 
 ** Other commands
    The other commands are rather self-explanatory.
@@ -67,8 +68,10 @@ to keep user-wide installed packages up-to-date.
    #+end_src
 
    #+RESULTS:
-   : Command not specified. Try nux install nixpkgs.htop
-   : Command list: install, uninstall, list, update, dry-update, replace
+   #+begin_example
+     Command not specified. Try nux install nixpkgs.htop
+     Command list: install, uninstall, list, update, dry-update, replace
+   #+end_example
 
 
 
