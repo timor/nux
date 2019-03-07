@@ -93,8 +93,19 @@ dry-update)
     echo Running dry-build
     checkUpdate
 ;;
+replace)
+    echo Replacing package set
+    newPackageList="$2"
+    if [ -r "$newPackageList" ]; then
+        cp --no-preserve=mode "$newPackageList" "$statefile"
+        update
+    else
+        echo "Cannot read from file '$newPackageList'"
+        exit 1
+    fi
+;;
 *)
     echo Command not specified. Try $(basename "$0") install nixpkgs.htop
-    echo Command list: install, uninstall, list, update, dry-update
+    echo Command list: install, uninstall, list, update, dry-update, replace
 ;;
 esac

@@ -49,17 +49,29 @@ to keep user-wide installed packages up-to-date.
 ** Installing packages
    =nux install <pkg>=
 
-   Note that =<pkgs>= takes the same form as the results returned by =nix search=
+   Note that =<pkg>= takes the same form as the results returned by =nix search=
+
+** Replacing package list
+   =nux replace <package-list-file>=
+
+   This replaces the installed packages with the ones from
+   =<package-list-file>=, which is expected to be in the same format as the
+   output of =nux list=.  Useful for manually rolling back or initializing a
+   package set from scratch.
 
 ** Other commands
    The other commands are rather self-explanatory.
 
-   #+begin_src sh
-     $ nux
-
-     Command not specified. Try nux install nixpkgs.htop
-     Command list: install, uninstall, list, update, dry-update
+   #+begin_src sh :results output
+     ./nux
    #+end_src
+
+   #+RESULTS:
+   : Command not specified. Try nux install nixpkgs.htop
+   : Command list: install, uninstall, list, update, dry-update, replace
+
+
+
 
 * Unaddressed Issues
   - Attributes becoming unavailable in pkgs collection.  Does fail loudly though.
