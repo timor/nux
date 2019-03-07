@@ -2,7 +2,7 @@ with import <nixpkgs> { };
 
 stdenv.mkDerivation rec {
   name = "nux-${version}";
-  version = "1.0.0";
+  version = "1.1.0";
 
   src = ./.;
 
