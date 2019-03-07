@@ -4,14 +4,26 @@ The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177
 
 =nux= is a "more declarative" light-weight alternative/companion to =nix-env=.
 The main difference is that packages are identified by their attribute names
-instead of the derivation names. This makes package update semantics identical
+instead of their derivation names. This makes package update semantics identical
 to =nixos-rebuild=.
 
 Note that the installed package collection is handled by =nix-env= at the
 moment.  This has the following consequences:
 
-- Calling =nux= creates a new generation of =~/.nix-profile=
-- =nix-env -u= will not upgrade packages installed with =nux=
+- Calling =nux= creates a new generation of =~/.nix-profile=.
+- =nix-env -u= will not upgrade packages installed with =nux=.
+- =nix-env --rollback= removes installed packages from the current user profile,
+  but not from the list of packages handled by =nux=.
+- Packages that are installed with =nix-env -i= and =nux= can collide.
+
+The packages are always taken from the current channel generations.  This has the
+following consequences:
+
+- =nux install= always includes a =nux update=
+
+This results in Semantics that lie somewhere between
+=environment.systemPackages= and =nix-env=.  The intention is to make it easier
+to keep user-wide installed packages up-to-date.
 
 * Installation
   There are 2 ways to install nux:
@@ -49,6 +61,6 @@ moment.  This has the following consequences:
     But if one of them is removed, the package will still not be uninstalled,
     since the other attribute remains in the list.
   - =-i= flag
-  - passing unknown flags to nix-env/nix-build
+  - passing extra flags to nix-env/nix-build
   - building the environment before installing it with nix-environment
   - supporting more than one argument name for install/uninstall operations
