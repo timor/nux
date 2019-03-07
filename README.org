@@ -34,7 +34,7 @@ to keep user-wide installed packages up-to-date.
 * Installation
   There are 2 ways to install nux:
 
-  1. Globally in NixOS with =environment.systemPackage=
+  1. Globally in NixOS with =environment.systemPackages=
   2. Locally per user with =nix-shell -p nux --run 'nux install nixpkgs.nux'=
 
   Note that the second method ensures that nux itself is not prone to the
