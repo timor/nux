@@ -1,14 +1,26 @@
 #!/usr/bin/env bash
 set -e
+
+packages=""
+passthruArgs=""
+action=""
+toplevelPath=""
+customPackageList=""
+pkgsFromFile=""
+dryRun=""
+
+dflag=
+if [ -n "$DEBUG" ]; then
+    dflag="--show-trace"
+    set -x
+fi
+
 statefile=~/.config/nixpkgs/nux-package-list
 envExpr=~/.config/nixpkgs/nux-env.nix
 [ -z "$NIX_USER_PROFILE_DIR" ] && { echo "NIX_USER_PROFILE_DIR not set, don't know where to store nux profile"; exit 1; }
 profilePath="$NIX_USER_PROFILE_DIR/nux"
 currentPackageList="$profilePath/nux-package-list"
 
-
-action="$1"
-package="$2"
 
 # Ensure that we always work from the last working profile, if there is one
 if [ -r "$currentPackageList" ]; then
@@ -31,7 +43,7 @@ function toplevelLetForms {
 }
 
 function checkUpdate {
-    nix-build --dry-run "$envExpr"
+    nix-build --dry-run "$envExpr" $dflag
 }
 
 function update {
@@ -55,29 +67,52 @@ $packList
 }; }
 EOF
   echo "Building new nux profile generation"
-  \nix-env -p "$profilePath" -if "$envExpr" -A env && \
+  \nix-env -p "$profilePath" -if "$envExpr" -A env $dflag $passthruArgs && \
       echo "Installing into user profile" && \
-      \nix-env -i --from-profile "$profilePath" nux-environment && \
+      \nix-env -i --from-profile "$profilePath" nux-environment $dflag $passthruArgs && \
       echo "# Updated successfully!" >> "$envExpr"
 }
 
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -p) toplevelPath="${2}."; shift 2;;
+        -f) customPackageList="$2";
+            pkgsFromFile="$(sed -nE 's/^([0-9a-zA-Z._-]+).*/\1/p' $customPackageList)"
+            shift 2;;
+        -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."; shift 1;;
+        -*) passthruArgs+=" $1"; shift 1;;
+        *)
+            if [ -z "$action" ]; then
+                action="$1"
+            else
+                packages+=" ${toplevelPath}$1"
+            fi
+            shift 1;;
+    esac
+done
+
+
 case "$action" in
 install|add)
-    [ -n "$package" ] || { echo "usage: $(basename "$0") install <pkgs>.<attribute>"; exit 1; }
-    echo "scheduled install'n'update"
-    pname=$(nix eval "($(toplevelLetForms) $package.name)")
-    echo "$package # $pname" >> "$statefile"
-    # TODO: trap
-    update && \
-        echo Success
+    [ -n "$packages" ] || [ -n "$customPackageList" ] || { echo "usage: $(basename "$0") install [-f package-list-file] [-p <pkgs>] <attribute>..."; exit 1; }
+    for package in $pkgsFromFile $packages; do
+        echo "scheduled install for '$package'"
+        pname=$(nix eval "($(toplevelLetForms) ${package}.name)" $dflag)
+        [ -z "$dryRun" ] &&  echo "$package # $pname" >> "$statefile"
+    done
+    [ -z "$dryRun" ] && update && echo Success
 ;;
 uninstall|remove|delete)
-    if (grep -Eq "^$package #" "$statefile"); then
-        sed -i "/^$package #/d" $statefile
-        update && echo "Success"
-    else
-        echo Not installed
-    fi
+    for package in $pkgsFromFile $packages; do
+        echo "scheduled removal of package '$package'"
+        if (grep -Eq "^$package\b" "$statefile"); then
+            [ -z "$dryRun" ] && sed -i "/^$package\b/d" $statefile
+        else
+            echo "Not installed: '$package'"
+            exit 1;
+        fi
+    done
+    update && echo "Success"
 ;;
 list)
     cat "$statefile"
@@ -93,19 +128,9 @@ dry-update)
     echo Running dry-build
     checkUpdate
 ;;
-replace)
-    echo Replacing package set
-    newPackageList="$2"
-    if [ -r "$newPackageList" ]; then
-        cp --no-preserve=mode "$newPackageList" "$statefile"
-        update
-    else
-        echo "Cannot read from file '$newPackageList'"
-        exit 1
-    fi
-;;
 *)
     echo Command not specified. Try $(basename "$0") install nixpkgs.htop
-    echo Command list: install, uninstall, list, update, dry-update, replace
+    echo Command list: install, uninstall, list, update, dry-update
 ;;
 esac
+set +x

@@ -1,5 +1,6 @@
 * Description
-DISCLAIMER:  This is a very early version.
+DISCLAIMER:  This is an early version with "works for me" status.  If something
+should go wrong, it can be fixed using nix's supplied commands.
 The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177cf7dd478
 You might want to keep a copy of your favorite list of packages somewhere...
 
@@ -46,10 +47,25 @@ to keep user-wide installed packages up-to-date.
 
 * Usage
 
+  The commands that take a list of package attributes (currently 'install' and
+  'remove') can be combined with the =-p <entry-in-NIX_PATH>=
+  and =-f path-to-package-list-file= command line options.  The =-p= option
+  applies to all following package names, and adds the given argument in front of
+  the dot, i.e. the top-level path entry in =NIX_PATH=.  So the following two
+  lines are equivalent:
+
+  =nux install nixpkgs.hello nixpkgs.htop nixpkgs.zsh foo.mc=
+
+  =nux install nixpkgs.hello -p nixpkgs htop zsh -p foo mc=
+
+  If supplied to =-f=, that file is interpreted as one attribute per line
+  (not affected by =-p=).
 ** Installing packages
-   =nux install <pkg>=
+   =nux install <pkg>...=
 
    Note that =<pkg>= takes the same form as the results returned by =nix search=
+
+   =nux install -f package-list-file=
 
 ** Replacing package list
    =nux replace <package-list-file>=
@@ -68,11 +84,10 @@ to keep user-wide installed packages up-to-date.
    #+end_src
 
    #+RESULTS:
-   #+begin_example
-     Command not specified. Try nux install nixpkgs.htop
-     Command list: install, uninstall, list, update, dry-update, replace
-   #+end_example
-
+   #+begin_src
+   Command not specified. Try nux install nixpkgs.htop
+   Command list: install, uninstall, list, update, dry-update
+   #+end_src
 
 
 
@@ -84,6 +99,4 @@ to keep user-wide installed packages up-to-date.
     expected, and if they have the same hash, they will only be installed once.
     But if one of them is removed, the package will still not be uninstalled,
     since the other attribute remains in the list.
-  - =-i= flag
-  - passing extra flags to nix-env/nix-build
-  - supporting more than one argument name for install/uninstall operations
+  - Give details about packages being built/updated
