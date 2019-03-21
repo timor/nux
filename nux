@@ -17,6 +17,7 @@ fi
 
 statefile=~/.config/nixpkgs/nux-package-list
 envExpr=~/.config/nixpkgs/nux-env.nix
+envBuildOutput=~/.config/nixpkgs/.nux-environment
 [ -z "$NIX_USER_PROFILE_DIR" ] && { echo "NIX_USER_PROFILE_DIR not set, don't know where to store nux profile"; exit 1; }
 profilePath="$NIX_USER_PROFILE_DIR/nux"
 currentPackageList="$profilePath/nux-package-list"
@@ -46,11 +47,11 @@ function checkUpdate {
     nix-build --dry-run "$envExpr" $dflag
 }
 
-function update {
-  local packList="$(cat $statefile |sort -u)"
-  truncate -s 0 "$envExpr"
-  # for ch in $(ls /nix/var/nix/profiles/per-user/root/channels | grep -v -e manifest -e binary-caches) ; do
-  cat >> "$envExpr" <<EOF
+function buildNuxEnv {
+    local packList="$(cat $statefile |sort -u)"
+    truncate -s 0 "$envExpr"
+    # for ch in $(ls /nix/var/nix/profiles/per-user/root/channels | grep -v -e manifest -e binary-caches) ; do
+    cat >> "$envExpr" <<EOF
 $(toplevelLetForms)
 let
   _pkgs = import <nixpkgs> { };
@@ -66,11 +67,17 @@ $packList
       postBuild = "cp \${packageListFile} \$out/nux-package-list";
 }; }
 EOF
-  echo "Building new nux profile generation"
-  \nix-env -p "$profilePath" -if "$envExpr" -A env $dflag $passthruArgs && \
-      echo "Installing into user profile" && \
-      \nix-env -i --from-profile "$profilePath" nux-environment $dflag $passthruArgs && \
-      echo "# Updated successfully!" >> "$envExpr"
+    echo "Building new Nux Environment..."
+    nix-build "$envExpr" -o "$envBuildOutput" -A env $dflag $passthruArgs
+}
+
+function update {
+    buildNuxEnv
+    echo "Creating new nux profile generation..."
+    \nix-env -p "$profilePath" -i "$envBuildOutput" $dflag $passthruArgs && \
+        echo "Installing into user profile" && \
+        \nix-env -i --from-profile "$profilePath" nux-environment $dflag $passthruArgs && \
+        echo "# Updated successfully!" >> "$envExpr"
 }
 
 while [ "$#" -gt 0 ]; do
