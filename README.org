@@ -4,9 +4,9 @@ should go wrong, it can be fixed using nix's supplied commands.
 The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177cf7dd478
 You might want to keep a copy of your favorite list of packages somewhere...
 
-The main difference is that packages are identified by their attribute names
-instead of their derivation names. This makes package update semantics identical
-to =nixos-rebuild=.
+The main difference compared to =nix-env= behavior is that packages are
+identified by their attribute names instead of their derivation names. This
+makes package update semantics identical to =nixos-rebuild=.
 
 Note that the installed package collection is handled by =nix-env= at the
 moment.  This has the following consequences:
@@ -47,8 +47,17 @@ to keep user-wide installed packages up-to-date.
 
 * Usage
 
+
+** Options
+
+- =-f file= :: read list of package attributes from =file= (not affected by =-p=)
+- =-p nixPath= :: prefix subsequent attributes with =nixPath=
+- =-n, --dry-run= :: don't actually install anything
+
+** Commands
+
   The commands that take a list of package attributes (currently 'install' and
-  'remove') can be combined with the =-p <entry-in-NIX_PATH>=
+  'uninstall') can be combined with the =-p <entry-in-NIX_PATH>=
   and =-f path-to-package-list-file= command line options.  The =-p= option
   applies to all following package names, and adds the given argument in front of
   the dot, i.e. the top-level path entry in =NIX_PATH=.  So the following two
@@ -60,34 +69,43 @@ to keep user-wide installed packages up-to-date.
 
   If supplied to =-f=, that file is interpreted as one attribute per line
   (not affected by =-p=).
-** Installing packages
-   =nux install <pkg>...=
 
-   Note that =<pkg>= takes the same form as the results returned by =nix search=
+*** Installing packages
+    =nux install <pkg>...=
 
-   =nux install -f package-list-file=
+    Note that =<pkg>= takes the same form as the results returned by =nix search=.
 
-** Other commands
-   The other commands are rather self-explanatory.
+    Aliases: =add=
 
-   #+begin_src sh :results output
-     ./nux
-   #+end_src
+*** Showing installed packages
+    =nux list=
 
-   #+RESULTS:
-   #+begin_src
-   Command not specified. Try nux install nixpkgs.htop
-   Command list: install, uninstall, list, update, dry-update
-   #+end_src
+*** Removing packages
 
+    =nux uninstall <pkg>...=
 
+    Aliases: =remove=, =delete=
 
-* Unaddressed Issues
-  - Attributes becoming unavailable in pkgs collection.  Does fail loudly though.
-  - Renamed/missing paths in =NIX_PATH=, same as above
-  - Duplicate detection, as two attributes from different pkgs collections count
-    as different packages.  If they differ, they will collide, which is
+*** Updating packages
+    =nux update=
+
+*** Display details of what changed since last build
+    =nux diff=
+
+* Known Issues
+  - Can not automatically deal with attributes becoming unavailable in pkgs
+    collection. Does fail loudly though.
+  - Can not automatically deal with renamed/missing paths in =NIX_PATH=, same as
+    above
+  - No Duplicate detection, as two attributes from different pkgs collections
+    count as different packages. If they differ, they will collide, which is
     expected, and if they have the same hash, they will only be installed once.
     But if one of them is removed, the package will still not be uninstalled,
     since the other attribute remains in the list.
-  - Give details about packages being built/updated
+  - running =nux update= always generates a new generation at the moment, and
+    =nux diff= will always report one difference
+
+* Things to improve
+  - Give details about packages being newly installed
+  - Provide rollback command
+  - add some tests
