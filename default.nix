@@ -6,13 +6,10 @@ stdenv.mkDerivation rec {
 
   src = ./.;
 
-  nativeBuildInputs = [ makeWrapper ];
-
   buildCommand = ''
   mkdir -p $out/bin
   cp $src/nux $out/bin/nux
   chmod +x $out/bin/nux
-  wrapProgram $out/bin/nux --prefix PATH : ${lib.makeBinPath [ nox ]}
 '';
 
   meta = with stdenv.lib; {

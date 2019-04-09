@@ -89,9 +89,6 @@ to keep user-wide installed packages up-to-date.
 *** Updating packages
     =nux update=
 
-*** Display details of what changed since last build
-    =nux diff=
-
 * Known Issues
   - Can not automatically deal with attributes becoming unavailable in pkgs
     collection. Does fail loudly though.
@@ -102,8 +99,8 @@ to keep user-wide installed packages up-to-date.
     expected, and if they have the same hash, they will only be installed once.
     But if one of them is removed, the package will still not be uninstalled,
     since the other attribute remains in the list.
-  - running =nux update= always generates a new generation at the moment, and
-    =nux diff= will always report one difference
+  - running =nux update= always generates a new generation at the moment, even
+    if no packages have changed
 
 * Things to improve
   - Give details about packages being newly installed

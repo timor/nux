@@ -44,11 +44,8 @@ function toplevelLetForms {
     done
 }
 
-function diffUpdate {
-    buildNuxEnv
-    local cmd="nox-update $envBuildOutput $profilePath/self"
-    echo "Running '$cmd'..."
-    $cmd
+function checkUpdate {
+    nix-build --dry-run "$envExpr" $dflag
 }
 
 function buildNuxEnv {
@@ -68,10 +65,7 @@ $packList
       env = _pkgs.buildEnv {
       name = ''nux-environment'';
       paths = _paths;
-      postBuild = ''
-cp \${packageListFile} \$out/nux-package-list
-ln -s \$out \$out/self
-'';
+      postBuild = "cp \${packageListFile} \$out/nux-package-list";
 }; }
 EOF
     echo "Building new Nux Environment..."
@@ -93,9 +87,7 @@ while [ "$#" -gt 0 ]; do
         -f) customPackageList="$2";
             pkgsFromFile="$(sed -nE 's/^([0-9a-zA-Z._-]+).*/\1/p' $customPackageList)"
             shift 2;;
-        -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."
-                      passthruArgs+=" --dry-run"
-                      shift 1;;
+        -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."; shift 1;;
         -*) passthruArgs+=" $1"; shift 1;;
         *)
             if [ -z "$action" ]; then
@@ -110,7 +102,7 @@ done
 
 case "$action" in
 install|add)
-    [ -n "$packages" ] || [ -n "$customPackageList" ] || { echo "usage: nux install [-f package-list-file] [-p <pkgs>] <attribute>..."; exit 1; }
+    [ -n "$packages" ] || [ -n "$customPackageList" ] || { echo "usage: $(basename "$0") install [-f package-list-file] [-p <pkgs>] <attribute>..."; exit 1; }
     for package in $pkgsFromFile $packages; do
         echo "scheduled install for '$package'"
         pname=$(nix eval "($(toplevelLetForms) ${package}.name)" $dflag)
@@ -140,12 +132,13 @@ update)
         echo "Failed"
     fi
 ;;
-diff)
-    diffUpdate
+dry-update)
+    echo Running dry-build
+    checkUpdate
 ;;
 *)
-    echo Command not specified. Try nux install nixpkgs.htop
-    echo Command list: install, uninstall, list, update, diff
+    echo Command not specified. Try $(basename "$0") install nixpkgs.htop
+    echo Command list: install, uninstall, list, update, dry-update
 ;;
 esac
 set +x
