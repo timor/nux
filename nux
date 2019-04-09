@@ -23,12 +23,13 @@ profilePath="$NIX_USER_PROFILE_DIR/nux"
 currentPackageList="$profilePath/nux-package-list"
 
 
-# Ensure that we always work from the last working profile, if there is one
+# Ensure that we always work from the last working profile, if there is one, if
+# not, assume a clean slate
 if [ -r "$currentPackageList" ]; then
     cp --no-preserve=mode "$profilePath/nux-package-list" "$statefile"
 else
     mkdir -p $(dirname "$statefile")
-    touch "$statefile"
+    truncate -s 0 "$statefile"
 fi
 
 function toplevelLetForms {
