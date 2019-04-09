@@ -44,10 +44,6 @@ function toplevelLetForms {
     done
 }
 
-function checkUpdate {
-    nix-build --dry-run "$envExpr" $dflag
-}
-
 function buildNuxEnv {
     local packList="$(cat $statefile |sort -u)"
     truncate -s 0 "$envExpr"
@@ -69,7 +65,7 @@ $packList
 }; }
 EOF
     echo "Building new Nux Environment..."
-    nix-build "$envExpr" -o "$envBuildOutput" -A env $dflag $passthruArgs
+    nix-build "$envExpr" -o "$envBuildOutput" $dflag $passthruArgs -A env
 }
 
 function update {
@@ -87,7 +83,7 @@ while [ "$#" -gt 0 ]; do
         -f) customPackageList="$2";
             pkgsFromFile="$(sed -nE 's/^([0-9a-zA-Z._-]+).*/\1/p' $customPackageList)"
             shift 2;;
-        -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."; shift 1;;
+        -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."; passthruArgs+=" --dry-run"; shift 1;;
         -*) passthruArgs+=" $1"; shift 1;;
         *)
             if [ -z "$action" ]; then
@@ -134,7 +130,9 @@ update)
 ;;
 dry-update)
     echo Running dry-build
-    checkUpdate
+    dryRun=1
+    passthruArgs+=" --dry-run"
+    buildNuxEnv
 ;;
 *)
     echo Command not specified. Try $(basename "$0") install nixpkgs.htop
