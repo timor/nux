@@ -4,7 +4,7 @@ stdenv.mkDerivation rec {
   name = "nux-${version}";
   version = "1.2.0";
 
-  src = ./.;
+  src = lib.cleanSource ./.;
 
   buildCommand = ''
   mkdir -p $out/bin
