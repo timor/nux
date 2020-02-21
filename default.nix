@@ -2,7 +2,7 @@ with import <nixpkgs> { };
 
 stdenv.mkDerivation rec {
   name = "nux-${version}";
-  version = "1.2.0";
+  version = "1.3";
 
   src = lib.cleanSource ./.;
 
