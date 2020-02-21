@@ -5,23 +5,31 @@ The code is adapted from https://gist.github.com/danbst/f07d9760ed15dd844e141177
 You might want to keep a copy of your favorite list of packages somewhere...
 
 The main difference compared to =nix-env= behavior is that packages are
-identified by their attribute names instead of their derivation names. This
+identified by their attribute names in the same package set that is available to
+the NixOS installation (default) This
 makes package update semantics identical to =nixos-rebuild=.
 
-Note that the installed package collection is handled by =nix-env= at the
-moment.  This has the following consequences:
+Also, depending on how an attribute is specified, it will either refer to a
+named path from ~NIX_PATH~, or the package set of the NixOS system.  The latter
+enables keeping up with the exact same packages that the OS would install,
+taking into account any system-wide overlays and other modifications to the
+package set.
+
+Note that the installed package collection is handled by =nix-env= underneath.
+This has the following consequences:
 
 - Calling =nux= creates a new generation of =~/.nix-profile=.
 - =nix-env -u= will not upgrade packages installed with =nux=.
-- =nix-env --rollback= removes the packages installed by =nux= from the current
+- =nix-env --rollback= removes the new packages installed by =nux= from the current
   user environment, but not from the list of packages handled by =nux=.
 - Packages that are installed with =nix-env -i= and =nux= can collide.
 
-=nux= builds and keeps track of packages in it's own profile, which resides in
-=$NIX_USER_PROFILE_DIR/nux=.  All =nux= commands use the package list of the
-most recent version of this profile as a basis.  This profile can of course be rolled back
-with =nix-env -p --rollback...=, which effectively resets the base list for the next =nux=
-command to that of the rolled-back-to generation.
+=nux= builds and keeps track of packages in its own profile, which resides in
+=$NIX_USER_PROFILE_DIR/nux=. All =nux= commands use the package list of the most
+recent version of this profile as a basis. This profile can of course be rolled
+back by specifying it as an argument to =nix-env -p --rollback...=, which
+effectively resets the base list for the next =nux= command to that of the
+rolled-back-to generation.
 
 The packages are always taken from the current channel generations.  This has the
 following consequences:
@@ -30,7 +38,7 @@ following consequences:
 
 This results in semantics that lie somewhere between
 =environment.systemPackages= and =nix-env=.  The intention is to make it easier
-to keep user-wide installed packages up-to-date.
+to keep user-wide installed packages defined by the OS up-to-date.
 
 * Installation
   There are 2 ways to install nux:
@@ -66,6 +74,11 @@ to keep user-wide installed packages up-to-date.
   =nux install nixpkgs.hello nixpkgs.htop nixpkgs.zsh foo.mc=
 
   =nux install nixpkgs.hello -p nixpkgs htop zsh -p foo mc=
+
+  Note that this is different from supplying no prefix at all, which will use
+  the package set currently installed by NixOS.
+
+  =nux install htop zsh foo mc=
 
   If supplied to =-f=, that file is interpreted as one attribute per line
   (not affected by =-p=).

@@ -4,7 +4,7 @@ set -e
 packages=""
 passthruArgs=""
 action=""
-toplevelPath=""
+toplevelExpr="<nixpkgs/nixos>"
 customPackageList=""
 pkgsFromFile=""
 dryRun=""
@@ -32,6 +32,7 @@ else
     truncate -s 0 "$statefile"
 fi
 
+# This is still needed to be able to process attributes directly
 function toplevelLetForms {
     IFS=":" read -ra entries <<< "$NIX_PATH"
     local a=$(printf '%s\n' "${entries[@]}" | sed '/=/!d;/nixos-config/d')
@@ -44,18 +45,21 @@ function toplevelLetForms {
     done
 }
 
+function establishPackageContext {
+    printf "$(toplevelLetForms)\n"
+    echo "with (import ${toplevelExpr} { }).pkgs;"
+}
 function buildNuxEnv {
     local packList="$(cat $statefile |sort -u)"
     truncate -s 0 "$envExpr"
     # for ch in $(ls /nix/var/nix/profiles/per-user/root/channels | grep -v -e manifest -e binary-caches) ; do
     cat >> "$envExpr" <<EOF
-$(toplevelLetForms)
 let
   _pkgs = import <nixpkgs> { };
   packageListFile = _pkgs.writeText "nux-package-list" ''
 $packList
   ''; in
-      rec { _paths = [
+      rec { _paths = $(establishPackageContext) [
 $packList
         ];
       env = _pkgs.buildEnv {
@@ -79,7 +83,7 @@ function update {
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        -p) toplevelPath="${2}."; shift 2;;
+        -e) toplevelExpr="${2}"; shift 2;;
         -f) customPackageList="$2";
             pkgsFromFile="$(sed -nE 's/^([0-9a-zA-Z._-]+).*/\1/p' $customPackageList)"
             shift 2;;
@@ -89,7 +93,7 @@ while [ "$#" -gt 0 ]; do
             if [ -z "$action" ]; then
                 action="$1"
             else
-                packages+=" ${toplevelPath}$1"
+                packages+=" $1"
             fi
             shift 1;;
     esac
@@ -100,8 +104,8 @@ case "$action" in
 install|add)
     [ -n "$packages" ] || [ -n "$customPackageList" ] || { echo "usage: $(basename "$0") install [-f package-list-file] [-p <pkgs>] <attribute>..."; exit 1; }
     for package in $pkgsFromFile $packages; do
-        echo "scheduled install for '$package'"
-        pname=$(nix eval "($(toplevelLetForms) ${package}.name)" $dflag)
+        pname=$(nix eval "($(establishPackageContext) ${package}.name)" $dflag)
+        echo "scheduled install for '$package' ($pname)"
         [ -z "$dryRun" ] &&  echo "$package # $pname" >> "$statefile"
     done
     [ -z "$dryRun" ] && update && echo Success

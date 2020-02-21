@@ -19,7 +19,8 @@ stdenv.mkDerivation rec {
       difference to nix-env is that updates are tracked based on path names
       defined in $NIX_PATH and attribute names instead of the name attribute of
       derivations.  Consequently, the package attributes are the same as the
-      ones returned by `nix search`.  Based on the following original code:
+      ones returned by `nix search` and the NixOS package set.
+      Based on the following original code:
       https://gist.github.com/danbst/f07d9760ed15dd844e141177cf7dd478 by danbst.
   '';
     maintainers = [ maintainers.timor ];
