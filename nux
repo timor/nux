@@ -41,7 +41,9 @@ function toplevelLetForms {
     local path
     for entry in $a ; do
         IFS="=" read ch path <<< "$entry"
-        echo "let $ch = import <$ch> { }; in"
+        if [ -e "$path/flake.nix" ]; then
+            echo "let $ch = import <$ch> { }; in"
+        fi
     done
 }
 
@@ -88,6 +90,7 @@ while [ "$#" -gt 0 ]; do
             pkgsFromFile="$(sed -nE 's/^([0-9a-zA-Z._-]+).*/\1/p' $customPackageList)"
             shift 2;;
         -n|--dry-run) dryRun=1; echo "Dry run, not doing anything."; passthruArgs+=" --dry-run"; shift 1;;
+        --state-file) cp --no-preserve=mode "$2" "$statefile"; shift 2;; # Use to override statefile
         -*) passthruArgs+=" $1"; shift 1;;
         *)
             if [ -z "$action" ]; then

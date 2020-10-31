@@ -13,7 +13,8 @@ Also, depending on how an attribute is specified, it will either refer to a
 named path from ~NIX_PATH~, or the package set of the NixOS system.  The latter
 enables keeping up with the exact same packages that the OS would install,
 taking into account any system-wide overlays and other modifications to the
-package set.
+package set.  Note that currently, the validity of a variable is determined by
+the presence of a =flake.nix= file.
 
 Note that the installed package collection is handled by =nix-env= underneath.
 This has the following consequences:
@@ -61,6 +62,7 @@ to keep user-wide installed packages defined by the OS up-to-date.
 - =-f file= :: read list of package attributes from =file= (not affected by =-p=)
 - =-p nixPath= :: prefix subsequent attributes with =nixPath=
 - =-n, --dry-run= :: don't actually install anything
+- =--state-file file= :: (advanced) supply a custom nux-package-list file
 
 ** Commands
 
@@ -107,6 +109,8 @@ to keep user-wide installed packages defined by the OS up-to-date.
     collection. Does fail loudly though.
   - Can not automatically deal with renamed/missing paths in =NIX_PATH=, same as
     above
+  - To recover from the above, copy =~/.config/nixpkgs/nux-package-list=
+    somewhere else, edit it and run =nux update --state-file <edited-file>=.
   - No Duplicate detection, as two attributes from different pkgs collections
     count as different packages. If they differ, they will collide, which is
     expected, and if they have the same hash, they will only be installed once.
